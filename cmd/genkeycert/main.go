@@ -15,10 +15,14 @@
 package main
 
 import (
+	"crypto/ecdsa"
+	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
 	"io/ioutil"
+	"os"
 )
 
 func loadCACertFile() *x509.Certificate {
@@ -67,6 +71,45 @@ func loadCAPrivateKeyFile() *rsa.PrivateKey {
 	}
 
 	return caPrivateKey
+}
+
+func makeClientKeyFile() *rsa.PrivateKey {
+	clientPrivateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return clientPrivateKey
+}
+
+// source from https://golang.org/src/crypto/tls/generate_cert.go
+func publicKey(priv interface{}) interface{} {
+	switch k := priv.(type) {
+	case *rsa.PrivateKey:
+		return &k.PublicKey
+	case *ecdsa.PrivateKey:
+		return &k.PublicKey
+	default:
+		return nil
+	}
+}
+
+// source from https://golang.org/src/crypto/tls/generate_cert.go
+func pemBlockForKey(priv interface{}) *pem.Block {
+	switch k := priv.(type) {
+	case *rsa.PrivateKey:
+		return &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(k)}
+	case *ecdsa.PrivateKey:
+		b, err := x509.MarshalECPrivateKey(k)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Unable to marshal ECDSA private key: %v", err)
+			os.Exit(2)
+		}
+		return &pem.Block{Type: "EC PRIVATE KEY", Bytes: b}
+	default:
+		return nil
+	}
 }
 
 func main() {
