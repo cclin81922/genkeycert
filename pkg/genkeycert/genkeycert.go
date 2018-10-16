@@ -132,7 +132,7 @@ func MakeClientCert(caCert *x509.Certificate, caKey, clientKey *rsa.PrivateKey) 
 			Locality:           []string{"Taipei"},
 			Organization:       []string{"cclin"},
 			OrganizationalUnit: []string{"cclin"},
-			CommonName:         "dummy",
+			CommonName:         host,
 		},
 		NotBefore: notBefore,
 		NotAfter:  notAfter,
