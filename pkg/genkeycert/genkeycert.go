@@ -23,7 +23,6 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"math/big"
 	"net"
 	"os"
@@ -102,9 +101,9 @@ func MakeClientKey() (*rsa.PrivateKey, error) {
 	return clientPrivateKey, nil
 }
 
-// MakeClientCertFile ...
+// MakeClientCert ...
 // revised version. source from https://golang.org/src/crypto/tls/generate_cert.go
-func MakeClientCertFile(caCert *x509.Certificate, caKey, clientKey *rsa.PrivateKey) (*x509.Certificate, []byte) {
+func MakeClientCert(caCert *x509.Certificate, caKey, clientKey *rsa.PrivateKey) (*x509.Certificate, []byte, error) {
 	var err error
 	var notBefore time.Time
 	if len(validFrom) == 0 {
@@ -112,8 +111,7 @@ func MakeClientCertFile(caCert *x509.Certificate, caKey, clientKey *rsa.PrivateK
 	} else {
 		notBefore, err = time.Parse("Jan 2 15:04:05 2006", validFrom)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to parse creation date: %s\n", err)
-			os.Exit(1)
+			return nil, nil, fmt.Errorf("Failed to parse creation date: %s", err)
 		}
 	}
 
@@ -122,7 +120,7 @@ func MakeClientCertFile(caCert *x509.Certificate, caKey, clientKey *rsa.PrivateK
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
-		log.Fatalf("failed to generate serial number: %s", err)
+		return nil, nil, fmt.Errorf("failed to generate serial number: %s", err)
 	}
 
 	// Make a certificate temaplte
@@ -150,15 +148,15 @@ func MakeClientCertFile(caCert *x509.Certificate, caKey, clientKey *rsa.PrivateK
 
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, caCert, publicKey(clientKey), caKey)
 	if err != nil {
-		log.Fatalf("Failed to create certificate: %s", err)
+		return nil, nil, fmt.Errorf("Failed to create certificate: %s", err)
 	}
 
-	clientCert, err := x509.ParseCertificate(derBytes) // NOT SURE ...
+	clientCert, err := x509.ParseCertificate(derBytes)
 	if err != nil {
-		panic(err)
+		return nil, nil, fmt.Errorf("Failed to parse certificate: %s", err)
 	}
 
-	return clientCert, derBytes
+	return clientCert, derBytes, nil
 }
 
 // SaveClientKeyFile ...
