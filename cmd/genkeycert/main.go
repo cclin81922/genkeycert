@@ -78,10 +78,7 @@ func loadCAPrivateKeyFile() *rsa.PrivateKey {
 		panic("pem.Decode failed")
 	}
 
-	der, err := x509.DecryptPEMBlock(pemBlock, []byte(""))
-	if err != nil {
-		panic(err)
-	}
+	der := pemBlock.Bytes
 
 	caPrivateKey, err := x509.ParsePKCS1PrivateKey(der)
 	if err != nil {
