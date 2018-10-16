@@ -28,7 +28,7 @@ curl -k --key dummy.key.pem --cert dummy.cert.pem https://localhost.localdomain:
 import github.com/cclin81922/genkeycert/pkg/genkeycert
 
 func demo(cn string) {
-    // TODO
+    keyStr, certStr, err := genkeycert.MakeClientKeyCert(cn)
 }
 ```
 

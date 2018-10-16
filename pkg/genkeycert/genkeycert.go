@@ -183,6 +183,12 @@ func SaveClientKeyFile(key *rsa.PrivateKey) error {
 	return nil
 }
 
+// GetClientKeyFileContent ...
+func GetClientKeyFileContent(key *rsa.PrivateKey) (string, error) {
+	// TODO
+	return "", nil
+}
+
 // SaveClientCertFile ...
 func SaveClientCertFile(cert *x509.Certificate, derBytes []byte) error {
 	// TODO remove derBytes
@@ -202,6 +208,12 @@ func SaveClientCertFile(cert *x509.Certificate, derBytes []byte) error {
 	}
 
 	return nil
+}
+
+// GetClientCertFileContent ...
+func GetClientCertFileContent(cert *x509.Certificate, derBytes []byte) (string, error) {
+	// TODO
+	return "", nil
 }
 
 // source from https://golang.org/src/crypto/tls/generate_cert.go
@@ -231,4 +243,53 @@ func pemBlockForKey(priv interface{}) *pem.Block {
 	default:
 		return nil
 	}
+}
+
+// MakeClientKeyCert ...
+func MakeClientKeyCert(host string) (key string, cert string, e error) {
+	caCert, err := LoadCACertFile()
+
+	if err != nil {
+		e = err
+		return
+	}
+
+	caKey, err := LoadCAPrivateKeyFile()
+
+	if err != nil {
+		e = err
+		return
+	}
+
+	clientKey, err := MakeClientKey()
+
+	if err != nil {
+		e = err
+		return
+	}
+
+	clientCert, clientCertDerBytes, err := MakeClientCert(caCert, caKey, clientKey)
+
+	if err != nil {
+		e = err
+		return
+	}
+
+	clientKeyFileContent, err := GetClientKeyFileContent(clientKey)
+
+	if err != nil {
+		e = err
+		return
+	}
+
+	clientCertFileContent, err := GetClientCertFileContent(clientCert, clientCertDerBytes)
+
+	if err != nil {
+		e = err
+		return
+	}
+
+	key = clientKeyFileContent
+	cert = clientCertFileContent
+	return
 }
