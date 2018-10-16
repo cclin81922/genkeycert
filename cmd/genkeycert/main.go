@@ -19,11 +19,29 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/pem"
+	"flag"
 	"fmt"
 	"io/ioutil"
+	"log"
+	"math/big"
+	"net"
 	"os"
+	"strings"
+	"time"
 )
+
+var (
+	host      = flag.String("host", "dummy", "Comma-separated hostnames and IPs to generate a certificate for")
+	validFrom = flag.String("start-date", "", "Creation date formatted as Jan 1 15:04:05 2011")
+	validFor  = flag.Duration("duration", 365*24*time.Hour, "Duration that certificate is valid for")
+	rsaBits   = flag.Int("rsa-bits", 2048, "Size of RSA key to generate. Ignored if --ecdsa-curve is set")
+)
+
+func init() {
+	flag.Parse()
+}
 
 func loadCACertFile() *x509.Certificate {
 	caCertFile, err := ioutil.ReadFile("pki/ca.cert.pem")
@@ -74,13 +92,72 @@ func loadCAPrivateKeyFile() *rsa.PrivateKey {
 }
 
 func makeClientKeyFile() *rsa.PrivateKey {
-	clientPrivateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	clientPrivateKey, err := rsa.GenerateKey(rand.Reader, *rsaBits)
 
 	if err != nil {
 		panic(err)
 	}
 
 	return clientPrivateKey
+}
+
+// revised version. source from https://golang.org/src/crypto/tls/generate_cert.go
+func makeClientCertFile(caCert *x509.Certificate, caKey, clientKey *rsa.PrivateKey) *x509.Certificate {
+
+	var err error
+	var notBefore time.Time
+	if len(*validFrom) == 0 {
+		notBefore = time.Now()
+	} else {
+		notBefore, err = time.Parse("Jan 2 15:04:05 2006", *validFrom)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to parse creation date: %s\n", err)
+			os.Exit(1)
+		}
+	}
+
+	notAfter := notBefore.Add(*validFor)
+
+	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
+	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
+	if err != nil {
+		log.Fatalf("failed to generate serial number: %s", err)
+	}
+
+	// Make a certificate temaplte
+	template := x509.Certificate{
+		SerialNumber: serialNumber,
+		Subject: pkix.Name{
+			Organization: []string{"Acme Co"},
+		},
+		NotBefore: notBefore,
+		NotAfter:  notAfter,
+
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid: true,
+	}
+
+	hosts := strings.Split(*host, ",")
+	for _, h := range hosts {
+		if ip := net.ParseIP(h); ip != nil {
+			template.IPAddresses = append(template.IPAddresses, ip)
+		} else {
+			template.DNSNames = append(template.DNSNames, h)
+		}
+	}
+
+	derBytes, err := x509.CreateCertificate(rand.Reader, &template, caCert, publicKey(clientKey), caKey)
+	if err != nil {
+		log.Fatalf("Failed to create certificate: %s", err)
+	}
+
+	clientCert, err := x509.ParseCertificate(derBytes) // NOT SURE ...
+	if err != nil {
+		panic(err)
+	}
+
+	return clientCert
 }
 
 // source from https://golang.org/src/crypto/tls/generate_cert.go
