@@ -8,7 +8,14 @@ export PATH=$PATH:~/go/bin
 # Command Line Usage
 
 ```
-genkeycert -cn=dummy
+genkeycert
+```
+
+Verify the output
+
+```
+osbapibaas -port=8443
+curl -k --key dummy.key.pem --cert dummy.cert.pem https://localhost.localdomain:8443/echo -d "hi"
 ```
 
 # Package Usage
@@ -23,6 +30,6 @@ func demo(cn string) {
 
 # Related Resources
 
-* [Signing certificate request with certificate authority](https://stackoverflow.com/questions/42643048/signing-certificate-request-with-certificate-authority)
-* [x509: no DEK-Info header in block](https://stackoverflow.com/questions/32981821/no-dek-info-header-in-block-when-attempting-to-read-encrypted-private-key)
-* [Certificate 和 key 可以存成多種格式, 常見的有DER, PEM, PFX](http://jianiau.blogspot.com/2015/07/openssl-key-and-certificate-conversion.html)
+* [Signing certificate request with certificate authority in golang](https://stackoverflow.com/questions/42643048/signing-certificate-request-with-certificate-authority)
+* [Error - x509: no DEK-Info header in block](https://stackoverflow.com/questions/32981821/no-dek-info-header-in-block-when-attempting-to-read-encrypted-private-key)
+* [Certificate and key formats](http://jianiau.blogspot.com/2015/07/openssl-key-and-certificate-conversion.html)

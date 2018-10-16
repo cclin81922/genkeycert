@@ -99,7 +99,7 @@ func makeClientKeyFile() *rsa.PrivateKey {
 }
 
 // revised version. source from https://golang.org/src/crypto/tls/generate_cert.go
-func makeClientCertFile(caCert *x509.Certificate, caKey, clientKey *rsa.PrivateKey) *x509.Certificate {
+func makeClientCertFile(caCert *x509.Certificate, caKey, clientKey *rsa.PrivateKey) (*x509.Certificate, []byte) {
 
 	var err error
 	var notBefore time.Time
@@ -130,8 +130,8 @@ func makeClientCertFile(caCert *x509.Certificate, caKey, clientKey *rsa.PrivateK
 		NotBefore: notBefore,
 		NotAfter:  notAfter,
 
-		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
-		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		//KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		//ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
 	}
 
@@ -154,7 +154,7 @@ func makeClientCertFile(caCert *x509.Certificate, caKey, clientKey *rsa.PrivateK
 		panic(err)
 	}
 
-	return clientCert
+	return clientCert, derBytes
 }
 
 // source from https://golang.org/src/crypto/tls/generate_cert.go
@@ -186,10 +186,40 @@ func pemBlockForKey(priv interface{}) *pem.Block {
 	}
 }
 
+func saveClientKeyFile(key *rsa.PrivateKey) {
+	keyOut, err := os.OpenFile("dummy.key.pem", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil {
+		log.Print("failed to open key.pem for writing:", err)
+		return
+	}
+	if err := pem.Encode(keyOut, pemBlockForKey(key)); err != nil {
+		log.Fatalf("failed to write data to key.pem: %s", err)
+	}
+	if err := keyOut.Close(); err != nil {
+		log.Fatalf("error closing key.pem: %s", err)
+	}
+	log.Print("wrote key.pem\n")
+}
+
+func saveClientCertFile(cert *x509.Certificate, derBytes []byte) {
+	certOut, err := os.Create("dummy.cert.pem")
+	if err != nil {
+		log.Fatalf("failed to open cert.pem for writing: %s", err)
+	}
+	if err := pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes}); err != nil {
+		log.Fatalf("failed to write data to cert.pem: %s", err)
+	}
+	if err := certOut.Close(); err != nil {
+		log.Fatalf("error closing cert.pem: %s", err)
+	}
+	log.Print("wrote cert.pem\n")
+}
+
 func main() {
 	caCert := loadCACertFile()
 	caKey := loadCAPrivateKeyFile()
 	clientKey := makeClientKeyFile()
-	makeClientCertFile(caCert, caKey, clientKey)
-	// TODO
+	clientCert, clientCertDerBytes := makeClientCertFile(caCert, caKey, clientKey)
+	saveClientKeyFile(clientKey)
+	saveClientCertFile(clientCert, clientCertDerBytes)
 }
