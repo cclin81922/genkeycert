@@ -127,7 +127,12 @@ func MakeClientCert(caCert *x509.Certificate, caKey, clientKey *rsa.PrivateKey) 
 	template := x509.Certificate{
 		SerialNumber: serialNumber,
 		Subject: pkix.Name{
-			Organization: []string{"Acme Co"},
+			Country:            []string{"TW"},
+			StreetAddress:      []string{"Taiwan"},
+			Locality:           []string{"Taipei"},
+			Organization:       []string{"cclin"},
+			OrganizationalUnit: []string{"cclin"},
+			CommonName:         "dummy",
 		},
 		NotBefore: notBefore,
 		NotAfter:  notAfter,
