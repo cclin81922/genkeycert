@@ -190,5 +190,9 @@ func pemBlockForKey(priv interface{}) *pem.Block {
 }
 
 func main() {
+	caCert := loadCACertFile()
+	caKey := loadCAPrivateKeyFile()
+	clientKey := makeClientKeyFile()
+	makeClientCertFile(caCert, caKey, clientKey)
 	// TODO
 }

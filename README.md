@@ -24,3 +24,4 @@ func demo(cn string) {
 # Related Resources
 
 * [Signing certificate request with certificate authority](https://stackoverflow.com/questions/42643048/signing-certificate-request-with-certificate-authority)
+* [x509: no DEK-Info header in block](https://stackoverflow.com/questions/32981821/no-dek-info-header-in-block-when-attempting-to-read-encrypted-private-key)
