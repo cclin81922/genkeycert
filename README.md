@@ -14,6 +14,10 @@ genkeycert
 Verify the output
 
 ```
+# inspect certificate
+openssl x509 -in dummy.cert.pem -text -noout
+
+# test osbapibaas
 osbapibaas -port=8443
 curl -k --key dummy.key.pem --cert dummy.cert.pem https://localhost.localdomain:8443/echo -d "hi"
 ```
